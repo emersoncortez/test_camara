@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escanear Producto y Buscar en Google</title>
+  <script src="https://unpkg.com/@zxing/browser@latest"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 20px;
+    }
+    video {
+      width: 100%;
+      max-width: 400px;
+      border: 2px solid #000;
+      margin-top: 10px;
+    }
+    #resultado {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    a {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 16px;
+      color: blue;
+      text-decoration: underline;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Escáner de Código de Producto</h1>
+  <button onclick="iniciarEscaneo()">Iniciar escaneo</button>
+  <video id="video" playsinline></video>
+  <div id="resultado">Esperando escaneo...</div>
+  <div id="link"></div>
+
+  <script>
+    const video = document.getElementById('video');
+    const resultado = document.getElementById('resultado');
+    const link = document.getElementById('link');
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+
+    async function iniciarEscaneo() {
+      resultado.textContent = "Escaneando...";
+      link.innerHTML = "";
+      try {
+        const devices = await ZXing.BrowserCodeReader.listVideoInputDevices();
+        const deviceId = devices[0].deviceId;
+
+        await codeReader.decodeFromVideoDevice(deviceId, video, (result, err) => {
+          if (result) {
+            const codigo = result.getText();
+            resultado.textContent = `Código detectado: ${codigo}`;
+            const url = `https://www.google.com/search?q=${encodeURIComponent(codigo)}`;
+            link.innerHTML = `<a href="${url}" target="_blank">Buscar en Google</a>`;
+            codeReader.reset(); // Detener escaneo después de leer uno
+          }
+        }, {
+          delayBetweenScanAttempts: 300,
+          hints: new Map([
+            [ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+              ZXing.BarcodeFormat.EAN_13,
+              ZXing.BarcodeFormat.UPC_A,
+              ZXing.BarcodeFormat.EAN_8,
+              ZXing.BarcodeFormat.CODE_128
+            ]]
+          ])
+        });
+      } catch (error) {
+        resultado.textContent = "Error al acceder a la cámara.";
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>
